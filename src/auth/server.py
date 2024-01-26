@@ -37,3 +37,17 @@ def login():
             return createJWT(auth.username, os.environ.get('JWT_SECRET'), True)
     else:
         return 'Invalid credentials! No user found with the provided username', 401
+
+
+def createJWT(username, secret, admin):
+    return jwt.encode(
+        {
+            'username': username,
+            'expiration': datetime.datetime.now(tz=datetime.datetime.utc)
+            + datetime.timedelta(days=1),
+            'issued_at': datetime.datetime.utcnow(),
+            'admin': admin
+        },
+        secret,
+        algorithm='HS256'
+    )
