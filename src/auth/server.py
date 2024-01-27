@@ -1,4 +1,6 @@
-import jwt, datetime, os
+import jwt
+import datetime
+import os
 from flask import Flask, request
 from flask_mysqldb import MySQL
 
@@ -37,3 +39,40 @@ def login():
             return createJWT(auth.username, os.environ.get('JWT_SECRET'), True)
     else:
         return 'Invalid credentials! No user found with the provided username', 401
+
+
+@server.route('/validate', method=['POST'])
+def validate():
+    encoded_jwt = request.headers['Authorization']
+    if not encoded_jwt:
+        return 'Missing JWT token', 401
+
+    encoded_jwt = encoded_jwt.split(' ')[1]
+    try:
+        decoded = jwt.decode(
+            encoded_jwt,
+            os.environ.get('JWT_SECRET'),
+            algorithm='HS256'
+        )
+    except Exception as e:
+        print(e)
+        return 'Failed to authorize using Token', 403
+    return decoded, 200
+
+
+def createJWT(username, secret, admin):
+    return jwt.encode(
+        {
+            'username': username,
+            'expiration': datetime.datetime.now(tz=datetime.datetime.utc)
+            + datetime.timedelta(days=1),
+            'issued_at': datetime.datetime.utcnow(),
+            'admin': admin
+        },
+        secret,
+        algorithm='HS256'
+    )
+
+
+if __name__ == '__main__':
+    server.run(host='0.0.0.0', port=5000)
