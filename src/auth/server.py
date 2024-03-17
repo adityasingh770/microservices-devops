@@ -1,5 +1,6 @@
 import jwt
-import datetime
+from datetime import datetime, timedelta
+import pytz
 import os
 from flask import Flask, request
 from flask_mysqldb import MySQL
@@ -22,13 +23,13 @@ def login():
         return 'Missing credential', 401
 
     # check DB for username and password
-    curser = mysql.connection.curser()
-    result = curser.execute(
+    cursor = mysql.connection.cursor()
+    result = cursor.execute(
         f'SELECT email, password FROM user WHERE email={auth.username}'
     )
 
     if result > 0:
-        user_row = curser.fetchone()
+        user_row = cursor.fetchone()
         # email = user_row[0]
         password = user_row[1]
 
@@ -61,12 +62,14 @@ def validate():
 
 
 def createJWT(username, secret, admin):
+    utc_now = datetime.now(pytz.utc)
+    expiration = utc_now + timedelta(days=1)
+    issued_at = utc_now
     return jwt.encode(
         {
             'username': username,
-            'expiration': datetime.datetime.now(tz=datetime.datetime.utc)
-            + datetime.timedelta(days=1),
-            'issued_at': datetime.datetime.utcnow(),
+            'expiration': expiration.isoformat(),
+            'issued_at': issued_at.isoformat(),
             'admin': admin
         },
         secret,
